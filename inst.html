@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Institution Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to bottom, red, yellow, white);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tabs {
+            display: flex;
+            background-color: red;
+            padding: 10px;
+        }
+
+        .tabs button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background-color: #ddd;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .tabs button.active {
+            background-color: black;
+            color: white;
+        }
+
+        .content {
+            padding: 20px;
+            flex: 1;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .status-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .status-table th, .status-table td {
+            border: 1px solid black;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .status-table th {
+            background-color: #f2f2f2;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .form-group button {
+            padding: 10px;
+            background-color: #00b000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="tabs">
+        <button class="active" onclick="showTab('dashboard')">Dashboard</button>
+        <button onclick="showTab('myAccount')">My Account</button>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <div id="dashboard" class="content">
+        <h2>Dashboard</h2>
+        <div id="nocSubmissionForm">
+            <h3>Submit NOC Request</h3>
+            <div class="form-group">
+                <label for="institutionName">Institution Name:</label>
+                <input type="text" id="institutionName" required>
+            </div>
+            <div class="form-group">
+                <label for="institutionAddress">Address:</label>
+                <input type="text" id="institutionAddress" required>
+            </div>
+            <div class="form-group">
+                <label for="institutionContact">Contact:</label>
+                <input type="text" id="institutionContact" required>
+            </div>
+            <div class="form-group">
+                <label for="dfsLink">DFS Approved Document's Link:</label>
+                <input type="text" id="dfsLink" required>
+            </div>
+            <button onclick="submitNocRequest()">Submit Request</button>
+        </div>
+
+        <div id="statusTable">
+            <h3>Status of NOC Requests</h3>
+            <table class="status-table">
+                <thead>
+                    <tr>
+                        <th>Date and Time</th>
+                        <th>Status</th>
+                        <th>Institution Name</th>
+                        <th>Address</th>
+                        <th>Contact</th>
+                        <th>DFS Approved Document's Link</th>
+                        <th>Reference Link</th>
+                    </tr>
+                </thead>
+                <tbody id="statusTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="myAccount" class="content hidden">
+        <h2>My Account</h2>
+        <div id="accountDetails"></div>
+        <button onclick="updateAccount()">Update Details</button>
+    </div>
+
+    <script src="status.js"></script>
+    <script src="indata.js"></script>
+    <script>
+        function showTab(tabId) {
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('myAccount').classList.add('hidden');
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tabs button').forEach(button => {
+                button.classList.remove('active');
+            });
+            document.querySelector(`.tabs button[onclick="showTab('${tabId}')"]`).classList.add('active');
+
+            if (tabId === 'dashboard') {
+                loadStatusTable();
+                checkNocSubmissionStatus();
+            } else if (tabId === 'myAccount') {
+                loadAccountDetails();
+            }
+        }
+
+        function checkNocSubmissionStatus() {
+            const nocSubmitted = localStorage.getItem('nocSubmitted');
+            document.getElementById('nocSubmissionForm').style.display = nocSubmitted ? 'none' : 'block';
+        }
+
+        function submitNocRequest() {
+            const institutionName = document.getElementById('institutionName').value;
+            const institutionAddress = document.getElementById('institutionAddress').value;
+            const institutionContact = document.getElementById('institutionContact').value;
+            const dfsLink = document.getElementById('dfsLink').value;
+
+            const requestDate = new Date().toLocaleString();
+            const newStatus = {
+                date: requestDate,
+                status: 'Request for NOC submitted to the nearest fire dept.',
+                institutionName,
+                institutionAddress,
+                institutionContact,
+                dfsLink,
+                response: '',
+                updateDate: '',
+                referenceLink: ''
+            };
+
+            let statusList = JSON.parse(localStorage.getItem('statusList') || '[]');
+            statusList.push(newStatus);
+            localStorage.setItem('statusList', JSON.stringify(statusList));
+            localStorage.setItem('nocSubmitted', 'true');
+            showTab('dashboard'); // Refresh dashboard to reflect the changes
+        }
+
+        function loadStatusTable() {
+            const statusTableBody = document.getElementById('statusTableBody');
+            statusTableBody.innerHTML = '';
+
+            let statusList = JSON.parse(localStorage.getItem('statusList') || '[]');
+            statusList.forEach(status => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${status.date}</td>
+                    <td>${status.response || status.status}</td>
+                    <td>${status.institutionName}</td>
+                    <td>${status.institutionAddress}</td>
+                    <td>${status.institutionContact}</td>
+                    <td><a href="${status.dfsLink}" target="_blank">${status.dfsLink}</a></td>
+                    <td>${status.referenceLink ? `<a href="${status.referenceLink}" target="_blank">${status.referenceLink}</a>` : ''}</td>
+                `;
+                statusTableBody.appendChild(row);
+            });
+        }
+
+        function loadAccountDetails() {
+            let userList = JSON.parse(localStorage.getItem('userList') || '[]');
+            let email = localStorage.getItem('userEmail');
+            let user = userList.find(user => user.email === email) || {};
+
+            document.getElementById('accountDetails').innerHTML = `
+                <div class="form-group">
+                    <label for="updateInstitutionName">Institution Name:</label>
+                    <input type="text" id="updateInstitutionName" value="${user.institutionName || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="updateInstitutionAddress">Address:</label>
+                    <input type="text" id="updateInstitutionAddress" value="${user.institutionAddress || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="updateInstitutionContact">Contact:</label>
+                    <input type="text" id="updateInstitutionContact" value="${user.institutionContact || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="updateDfsLink">DFS Approved Document's Link:</label>
+                    <input type="text" id="updateDfsLink" value="${user.dfsLink || ''}">
+                </div>
+            `;
+        }
+
+        function updateAccount() {
+            const institutionName = document.getElementById('updateInstitutionName').value;
+            const institutionAddress = document.getElementById('updateInstitutionAddress').value;
+            const institutionContact = document.getElementById('updateInstitutionContact').value;
+            const dfsLink = document.getElementById('updateDfsLink').value;
+
+            const userDetails = { institutionName, institutionAddress, institutionContact, dfsLink };
+            let userList = JSON.parse(localStorage.getItem('userList') || '[]');
+            let email = localStorage.getItem('userEmail');
+            userList = userList.map(user => user.email === email ? { ...user, ...userDetails } : user);
+            localStorage.setItem('userList', JSON.stringify(userList));
+            alert('Account details updated!');
+        }
+
+        function logout() {
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('nocSubmitted');
+            window.location.href = 'index.html';
+        }
+
+        // Initialize
+        showTab('dashboard'); // Make the dashboard tab active by default
+    </script>
+</body>
+</html>

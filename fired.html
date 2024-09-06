@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fire Department Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to bottom, red, yellow, white);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tabs {
+            display: flex;
+            background-color: red;
+            padding: 10px;
+        }
+
+        .tabs button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background-color: #ddd;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .tabs button.active {
+            background-color: black;
+            color: white;
+        }
+
+        .content {
+            padding: 20px;
+            flex: 1;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .status-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .status-table th, .status-table td {
+            border: 1px solid black;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .status-table th {
+            background-color: #f2f2f2;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .form-group button {
+            padding: 10px;
+            background-color: #00b000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="tabs">
+        <button class="active" onclick="showTab('dashboard')">Dashboard</button>
+        <button onclick="showTab('myAccount')">My Account</button>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <div id="dashboard" class="content">
+        <h2>Dashboard</h2>
+        <div id="statusTable">
+            <h3>Requests from Institutions</h3>
+            <table class="status-table">
+                <thead>
+                    <tr>
+                        <th>Date and Time</th>
+                        <th>Status</th>
+                        <th>Institution Name</th>
+                        <th>Address</th>
+                        <th>Contact</th>
+                        <th>DFS Approved Document's Link</th>
+                        <th>Reference Link</th>
+                        <th>Update Status</th>
+                    </tr>
+                </thead>
+                <tbody id="statusTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="myAccount" class="content hidden">
+        <h2>My Account</h2>
+        <div id="accountDetails"></div>
+        <button onclick="updateAccount()">Update Details</button>
+    </div>
+
+    <script src="status.js"></script>
+    <script src="fddata.js"></script>
+    <script>
+        function showTab(tabId) {
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('myAccount').classList.add('hidden');
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tabs button').forEach(button => {
+                button.classList.remove('active');
+            });
+            document.querySelector(`.tabs button[onclick="showTab('${tabId}')"]`).classList.add('active');
+
+            if (tabId === 'dashboard') {
+                loadStatusTable();
+            } else if (tabId === 'myAccount') {
+                loadAccountDetails();
+            }
+        }
+
+        function loadStatusTable() {
+            const statusTableBody = document.getElementById('statusTableBody');
+            statusTableBody.innerHTML = '';
+
+            const statusList = JSON.parse(localStorage.getItem('statusList') || '[]');
+            console.log('Loaded statusList:', statusList); // Debugging line
+
+            statusList.forEach((status, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${status.date}</td>
+                    <td>${status.response || status.status}</td>
+                    <td>${status.institutionName}</td>
+                    <td>${status.institutionAddress}</td>
+                    <td>${status.institutionContact}</td>
+                    <td><a href="${status.dfsLink}" target="_blank">${status.dfsLink}</a></td>
+                    <td>${status.referenceLink ? `<a href="${status.referenceLink}" target="_blank">${status.referenceLink}</a>` : ''}</td>
+                    <td>
+                        <button onclick="updateStatus(${index})">Update Status</button>
+                    </td>
+                `;
+                statusTableBody.appendChild(row);
+            });
+        }
+
+        function updateStatus(index) {
+            const statusList = JSON.parse(localStorage.getItem('statusList') || '[]');
+            const status = statusList[index];
+            
+            const newStatus = prompt('Enter new status (e.g., Request verified, Inspection date confirmed):', status.response || status.status);
+            if (newStatus) {
+                const referenceLink = prompt('Enter reference link (optional):', status.referenceLink || '');
+
+                status.response = newStatus;
+                status.updateDate = new Date().toLocaleString();
+                status.referenceLink = referenceLink;
+
+                localStorage.setItem('statusList', JSON.stringify(statusList));
+                loadStatusTable(); // Refresh table to show updated status
+            }
+        }
+
+        function loadAccountDetails() {
+            const fireDeptDetails = JSON.parse(localStorage.getItem('fireDeptDetails') || '{}');
+            
+            document.getElementById('accountDetails').innerHTML = `
+                <div class="form-group">
+                    <label for="updateDeptName">Department Name:</label>
+                    <input type="text" id="updateDeptName" value="${fireDeptDetails.name || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="updateDeptContact">Contact:</label>
+                    <input type="text" id="updateDeptContact" value="${fireDeptDetails.contact || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="updateDeptAddress">Address:</label>
+                    <input type="text" id="updateDeptAddress" value="${fireDeptDetails.address || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="updateDeptEmail">Email:</label>
+                    <input type="text" id="updateDeptEmail" value="${fireDeptDetails.email || ''}">
+                </div>
+            `;
+        }
+
+        function updateAccount() {
+            const name = document.getElementById('updateDeptName').value;
+            const contact = document.getElementById('updateDeptContact').value;
+            const address = document.getElementById('updateDeptAddress').value;
+            const email = document.getElementById('updateDeptEmail').value;
+
+            const fireDeptDetails = { name, contact, address, email };
+            localStorage.setItem('fireDeptDetails', JSON.stringify(fireDeptDetails));
+            alert('Account details updated!');
+        }
+
+        function logout() {
+            localStorage.removeItem('userEmail');
+            window.location.href = 'index.html';
+        }
+
+        // Initialize
+        showTab('dashboard'); // Make the dashboard tab active by default
+    </script>
+</body>
+</html>

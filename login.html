@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to bottom, red, yellow, white);
+        }
+
+        .login-box {
+            width: 180px; 
+            height: 190px;
+            background-color: rgba(255, 255, 255, 0.5);
+            padding: 0px 20px;
+            border: 2px solid black;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .login-box h2 {
+            margin-bottom: 10px;
+            color: black;
+            font-size: 18px; 
+        }
+
+        .login-box input {
+            display: block;
+            width: 87%;
+            margin-bottom: 5px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 10px; 
+        }
+
+        .login-box button {
+            padding: 10px 20px;
+            background-color: #ffcc00;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        .login-box a {
+            display: block;
+            margin-top: 10px;
+            color: blue;
+            text-decoration: none;
+            font-size: 9px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2>Login</h2>
+        <input type="email" id="email" placeholder="Enter your email">
+        <input type="password" id="password" placeholder="Enter your password">
+        <button onclick="login()">Submit</button>
+        <a href="register.html">Don't have an account? Register</a>
+    </div>
+
+    <script src="indata.js"></script>
+    <script src="fddata.js"></script>
+    <script>
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // Retrieve users from Local Storage
+            const institutions = getInstitutions();
+            const fireDepartments = getFireDepartments();
+
+            // Debug: Log the fetched data to check its structure
+            console.log('Institutions:', institutions);
+            console.log('Fire Departments:', fireDepartments);
+
+            // Check if the email and password match any institution
+            const institutionUser = institutions.find(user => user.institutionHeadEmail === email && user.password === password);
+
+            // Check if the email and password match any fire department
+            const fireDeptUser = fireDepartments.find(user => user.fireDeptEmail === email && user.password === password);
+
+            if (institutionUser) {
+                alert('Login successful for Institution!');
+                window.location.href = 'inst.html';
+            } else if (fireDeptUser) {
+                alert('Login successful for Fire Department!');
+                window.location.href = 'fired.html';
+            } else {
+                alert('Login failed: Incorrect email or password.');
+            }
+        }
+    </script>
+</body>
+</html>
